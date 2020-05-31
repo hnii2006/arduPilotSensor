@@ -90,7 +90,7 @@ void sweep() {
   delay(1000);
   digitalWrite(LED,LOW);
   for(i=10; i<2000; i+=10) {
-    OCR1A = 6*i/4;
+    OCR1A = i/4;
     delay(NEXT_POS_DELAY);
     j=swTest();
     if(j<0) return;
@@ -103,10 +103,28 @@ int getTime() {
   delayMicroseconds(10);
   digitalWrite(TRIGOUT, LOW);
   digitalWrite(LED,HIGH);
-  duration = pulseIn(ECHOIN, HIGH);
+  duration = pulseIn(ECHOIN, HIGH, 30000);
   digitalWrite(LED, LOW);
   duration = duration /59;
   return duration;
+}
+int hold=500;
+#define MAX 400
+#define MIN 20 //cm
+int avgTime(int t) {
+  int i;
+  if((t>MAX)||(t<MIN)) {
+    hold = MAX+100;
+  } else {
+    if(hold>MAX) {
+      hold = t;
+    } else if(abs(t-hold)>20) {
+      hold = (t + hold)/2;
+    } else {
+      hold = t;
+    }
+  }
+  return hold;
 }
 void loop() {
   int i;
@@ -117,15 +135,18 @@ void loop() {
       sweep();
       break;
     case 1:
-      OCR1A = 500/4*6;
+      OCR1A = 500/4;
       digitalWrite(LED,LOW);
       break;
     case 2:
       digitalWrite(LED,HIGH);
-      OCR1A = 2000/4*6;
+      OCR1A = 2000/4;
       break;  
     case 3:
       i=getTime();
+      Serial.print(i);
+      Serial.print("cm, avg->");
+      i = avgTime(i);
       Serial.print(i);
       Serial.println("cm");
       OCR1A = i*10/4;
